@@ -22,7 +22,7 @@ GPIO.setup(MOTOR_1_EN, GPIO.OUT)
 GPIO.setup(INFRARED, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(LED, GPIO.OUT)
 
-pwm = GPIO.PWM(MOTOR_1_EN, 1000)
+pwm = GPIO.PWM(MOTOR_1_EN, 50)
 
 
 def motor(speed, direction=1):
@@ -44,7 +44,6 @@ def img_capture(ev, preview=False, duration=1500):
     current_timestamp = str(datetime.now()).replace(" ", "_")
 
     mf.make_directory("", "Images")
-
     mf.make_directory("Images/", current_timestamp)
 
     default = f"libcamera-still -t {duration} --rotation 180 --autofocus --ev {ev} -o {current_timestamp}.jpg"
@@ -113,11 +112,11 @@ def stack_images(scale, img_array):
 def main():
     # Start conveyor until carriage is detected
     while True:
-        if not GPIO.input(INFRARED):
+        if GPIO.input(INFRARED):
+            motor(75, 1)
+        else:
             motor(0, 0)
             break
-        else:
-            motor(100, 1)
 
     # Capture image and create a new directory
     img_directory = img_capture(0)
@@ -131,15 +130,17 @@ def main():
     mf.print_message("Processing...", "INFO")
 
     # Process image
-    # mp.process_tablets(img, path, [40, 9, 236, 20])  # Sample 1
-    mp.process_tablets(img, path, [164, 27, 221, 25])  # Sample 2
+    result, count, condition = mp.process_image(img, path, 3)  # 1-WhiteTab, 2-PinkTab, 3-YellowGreenCap
 
     # Show output
-    result = cv2.imread(path + "_CONTOURS.jpg")
-
     cv2.imshow("Contours", img_resize(result, 0.40))
+    mf.print_message(f"{count} object(s) detected", "INFO")
+    if condition:
+        mf.print_message("PASSED", "INFO")
+    else:
+        mf.print_message("FAILED", "INFO")
 
-    cv2.waitKey(10000)
+    cv2.waitKey(0)
     cv2.destroyAllWindows()
 
     # Show output
@@ -151,8 +152,10 @@ def main():
     #         motor(0, 0)
     #         break
     #     else:
-    #         motor(100, 1)
+    #         motor(75, 1)
 
 
 if __name__ == "__main__":
     main()
+
+    GPIO.cleanup()
