@@ -41,12 +41,7 @@ def motor(speed, direction=1):
 
 
 def img_capture(ev, preview=False, duration=1500):
-    current_timestamp = str(datetime.now()).replace(" ", "_")
-
-    mf.make_directory("", "Images")
-    mf.make_directory("Images/", current_timestamp)
-
-    default = f"libcamera-still -t {duration} --rotation 180 --autofocus --ev {ev} -q 100 -o {current_timestamp}.jpg"
+    default = f"libcamera-still -t {duration} --rotation 180 --autofocus --ev {ev} -q 100 -o image.jpg"
 
     if not preview:
         my_cmd = default + " --nopreview"
@@ -59,12 +54,6 @@ def img_capture(ev, preview=False, duration=1500):
 
     GPIO.output(LED, GPIO.HIGH)
 
-    os.rename(f"{current_timestamp}.jpg", f"Images/{current_timestamp}/{current_timestamp}.jpg")
-
-    mf.print_message("Successfully captured and saved", "INFO")
-
-    return current_timestamp
-
 
 def main():
     # Start conveyor until carriage is detected
@@ -75,11 +64,15 @@ def main():
             motor(0, 0)
             break
 
-    # Capture image and create a new directory
-    img_directory = img_capture(0)
+    # Capture image and store in a new directory
+    img_capture(0)
+    current_timestamp = str(datetime.now()).replace(" ", "_")
+    mf.make_directory("Images/", current_timestamp)
+    os.rename(f"image.jpg", f"Images/{current_timestamp}/{current_timestamp}.jpg")
+    mf.print_message("Successfully captured and saved", "INFO")
 
     # Define image path
-    path = f"Images/{img_directory}/{img_directory}"
+    path = f"Images/{current_timestamp}/{current_timestamp}"
 
     # Read image
     img = cv2.imread(path + ".jpg")
@@ -90,7 +83,7 @@ def main():
     result, count, condition = mp.process_image(img, path, 3)  # 1-WhiteTab, 2-PinkTab, 3-YellowGreenCap
 
     # Show output
-    cv2.imshow("Contours", mf.img_resize(result, 0.40))
+    cv2.imshow("Contours", mf.resize_image(result, 0.40))
     mf.print_message(f"{count} object(s) detected", "INFO")
     if condition:
         mf.print_message("PASSED", "INFO")
