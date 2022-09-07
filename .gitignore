@@ -3,3 +3,5 @@ Images/
 /untitled.txt
 *test.py
 /hsv_calculator.py
+__pycache__/
+.idea/
