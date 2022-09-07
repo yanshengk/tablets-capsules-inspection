@@ -20,6 +20,7 @@ GPIO.setup(MOTOR_1_B, GPIO.OUT)
 GPIO.setup(MOTOR_1_EN, GPIO.OUT)
 GPIO.setup(INFRARED, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(LED, GPIO.OUT)
+GPIO.output(LED, GPIO.HIGH)
 
 pwm = GPIO.PWM(MOTOR_1_EN, 50)
 
@@ -45,7 +46,7 @@ def img_capture(ev, preview=False, duration=1500):
     mf.make_directory("", "Images")
     mf.make_directory("Images/", current_timestamp)
 
-    default = f"libcamera-still -t {duration} --rotation 180 --autofocus --ev {ev} -o {current_timestamp}.jpg"
+    default = f"libcamera-still -t {duration} --rotation 180 --autofocus --ev {ev} -q 100 -o {current_timestamp}.jpg"
 
     if not preview:
         my_cmd = default + " --nopreview"
