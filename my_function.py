@@ -119,13 +119,12 @@ def kmeans_clustering(image, k, path=None):
     two_d_image = image.reshape((-1, 3))
     # convert to float
     two_d_image = np.float32(two_d_image)
-    # print(two_d_image.shape)
 
     # define stopping criteria
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 100, 1.0)
     # apply kmeans
     _, labels, centers = cv2.kmeans(two_d_image, k, None, criteria, 10, cv2.KMEANS_PP_CENTERS)
-    # print(centers)
+    colours = centers
 
     # convert back to 8 bit values
     centers = np.uint8(centers)
@@ -138,7 +137,7 @@ def kmeans_clustering(image, k, path=None):
     if path is not None:
         cv2.imwrite(path + "_SEGMENTED.jpg", segmented)
 
-    return segmented
+    return segmented, colours
 
 
 def blur_image(image, path=None):
@@ -204,37 +203,18 @@ def get_objects(image):
     return all_contours, all_area, all_box
 
 
-def draw_objects(image, sample, contours, area, box, path=None):
-    index = 0
-    flag = True
-    if sample == 1:
-        objects = 10
-        area_threshold = 75000
-    elif sample == 2:
-        objects = 12
-        area_threshold = 45000
-    else:
-        objects = 10
-        area_threshold = 60000
+def draw_objects(image, contours, box, colour, path=None):
     result = image.copy()
 
-    for a in area:
-        cv2.drawContours(result, contours[index], -1, (255, 0, 0), 3)
+    index = 0
+    for _ in contours:
+        # cv2.drawContours(result, contours[index], -1, (255, 0, 0), 3)
 
         x, y, width, height = box[index]
-
-        if a < area_threshold:
-            bounding_box_colour = (0, 0, 255)
-            flag = False
-        else:
-            bounding_box_colour = (0, 255, 0)
-        cv2.rectangle(result, (x, y), (x + width, y + height), bounding_box_colour, 3)
+        cv2.rectangle(result, (x, y), (x + width, y + height), colour[index], 3)
 
         index += 1
     if path is not None:
         cv2.imwrite(path + "_RESULT.jpg", result)
 
-    if index != objects:
-        flag = False
-
-    return result, index, flag
+    return result
