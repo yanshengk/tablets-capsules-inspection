@@ -1,0 +1,37 @@
+{
+  "samples": [
+    {
+      "id": 1,
+      "brand": "Axcel",
+      "medicine": "Paracetamol",
+      "type": "tablet",
+      "cluster": 3,
+      "hsv1": [52, 9, 224, 10],
+      "hsv2": null,
+      "object": 10,
+      "area": 75000
+    },
+    {
+      "id": 2,
+      "brand": "Panadol",
+      "medicine": "Paracetamol",
+      "type": "tablet",
+      "cluster": 3,
+      "hsv1": [165, 29, 208, 20],
+      "hsv2": null,
+      "object": 12,
+      "area": 45000
+    },
+    {
+      "id": 3,
+      "brand": "Prime",
+      "medicine": "Mefenamic acid",
+      "type": "capsule",
+      "cluster": 6,
+      "hsv1": [75, 88, 166, 20],
+      "hsv2": [28, 121, 192, 20],
+      "object": 10,
+      "area": 60000
+    }
+  ]
+}
