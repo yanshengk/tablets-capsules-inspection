@@ -20,24 +20,40 @@ GPIO.setup(MOTOR_1_B, GPIO.OUT)
 GPIO.setup(MOTOR_1_EN, GPIO.OUT)
 GPIO.setup(INFRARED, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(LED, GPIO.OUT)
+
+GPIO.output(MOTOR_1_A, GPIO.LOW)
+GPIO.output(MOTOR_1_B, GPIO.LOW)
 GPIO.output(LED, GPIO.HIGH)
 
 pwm = GPIO.PWM(MOTOR_1_EN, 50)
+pwm.start(0)
 
 
-def motor(speed, direction=1):
-    if direction == 1:
-        GPIO.output(MOTOR_1_A, GPIO.HIGH)
-        GPIO.output(MOTOR_1_B, GPIO.LOW)
-        pwm.start(speed)
-    elif direction == -1:
+def motor(state, speed=100):
+    if state == 1 or state == -1:
+        pwm.ChangeDutyCycle(speed)
+        if state == 1:
+            GPIO.output(MOTOR_1_A, GPIO.HIGH)
+            GPIO.output(MOTOR_1_B, GPIO.LOW)
+        else:
+            GPIO.output(MOTOR_1_A, GPIO.LOW)
+            GPIO.output(MOTOR_1_B, GPIO.HIGH)
+    elif state == 0:
         GPIO.output(MOTOR_1_A, GPIO.LOW)
-        GPIO.output(MOTOR_1_B, GPIO.HIGH)
-        pwm.start(speed)
-    elif direction == 0:
-        GPIO.output(MOTOR_1_A, GPIO.LOW)
         GPIO.output(MOTOR_1_B, GPIO.LOW)
-        pwm.stop()
+    else:
+        pass
+
+
+def detect_carriage(flag):
+    while True:
+        if (GPIO.input(INFRARED) and not flag) or (not GPIO.input(INFRARED) and flag):
+            motor(1, 75)
+        else:
+            motor(0)
+            break
+
+    return not flag
 
 
 def capture_image(ev, preview=False, duration=1500):
@@ -56,13 +72,17 @@ def capture_image(ev, preview=False, duration=1500):
 
 
 def main(sample):
-    # Start conveyor until carriage is detected
+    carriage_flag = False
+
     while True:
-        if GPIO.input(INFRARED):
-            motor(75, 1)
+        if not GPIO.input(INFRARED):
+            motor(-1, 75)
         else:
-            motor(0, 0)
+            motor(0)
             break
+
+    # Start conveyor until carriage is detected
+    carriage_flag = detect_carriage(carriage_flag)
 
     # Capture image and store in a new directory
     capture_image(0)
@@ -90,18 +110,23 @@ def main(sample):
     else:
         mf.print_message("FAILED", "INFO")
 
-    cv2.waitKey(0)
+    cv2.waitKey(3000)
     cv2.destroyAllWindows()
 
-    while True:
-        if GPIO.input(INFRARED):
-            motor(0, 0)
-            break
-        else:
-            motor(75, 1)
+    carriage_flag = detect_carriage(carriage_flag)
+
+    if not carriage_flag:
+        pass
 
 
 if __name__ == "__main__":
-    main(3)
+    while True:
+        sample_id = int(input("Enter sample ID (0 to exit): "))
 
+        if sample_id == 0:
+            break
+        else:
+            main(sample_id)
+
+    pwm.stop()
     GPIO.cleanup()
