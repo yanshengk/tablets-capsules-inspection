@@ -141,7 +141,7 @@ def kmeans_clustering(image, k, path=None):
 
 
 def blur_image(image, path=None):
-    blur = cv2.GaussianBlur(image, (35, 35), 2.5)
+    blur = cv2.GaussianBlur(image, (9, 9), 0)
     if path is not None:
         cv2.imwrite(path + "_BLUR.jpg", blur)
 
