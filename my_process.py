@@ -49,7 +49,7 @@ def process_image(image, path, sample):
     box_colour = []
     for a in area:
         if a < sample_area[sample]:
-            box_colour.append((0, 0, 255))
+            box_colour.append((0, 128, 255))
             flag = False
         else:
             box_colour.append((0, 255, 0))
