@@ -82,6 +82,10 @@ def hsv_boundary(target):
     return lower, upper
 
 
+def take_first(element):
+    return element[0]
+
+
 def get_roi(image, path=None):
     hsv = bgr_to_hsv(image)
     blur = blur_image(hsv)
@@ -89,21 +93,52 @@ def get_roi(image, path=None):
     canny = canny_detection(mask)
     dilate = dilate_image(canny)
 
-    x, y, width, height = (550, 930, 3400, 2200)
+    transform = np.zeros_like(image)
 
-    contours, hierarchy = cv2.findContours(dilate, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    contours, hierarchy = cv2.findContours(dilate, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     for cnt in contours:
         area = cv2.contourArea(cnt)
         if area > 1000000:
             perimeter = cv2.arcLength(cnt, True)
             approx = cv2.approxPolyDP(cnt, 0.02 * perimeter, True)
             x, y, width, height = cv2.boundingRect(approx)
+            points = approx.ravel()
 
-    roi = image[y:y + height, x:x + width]
+            coordinates = []
+            index = 0
+            for _ in points:
+                if index % 2 == 0:
+                    coordinates.append([points[index], points[index + 1]])
+                index += 1
+            # Sort x in ascending order
+            coordinates.sort(key=take_first)
+
+            corners = []
+            # Sort left y
+            if coordinates[0][1] < coordinates[1][1]:
+                corners.append(coordinates[0])
+                corners.append(coordinates[1])
+            else:
+                corners.append(coordinates[1])
+                corners.append(coordinates[0])
+            # Sort right y
+            if coordinates[2][1] < coordinates[3][1]:
+                corners.append(coordinates[2])
+                corners.append(coordinates[3])
+            else:
+                corners.append(coordinates[3])
+                corners.append(coordinates[2])
+            print(corners)
+
+            w, h = width, height
+            pts1 = np.float32([corners[0], corners[2], corners[1], corners[3]])
+            pts2 = np.float32([[0, 0], [w, 0], [0, h], [w, h]])
+            matrix = cv2.getPerspectiveTransform(pts1, pts2)
+            transform = cv2.warpPerspective(image, matrix, (w, h))
     if path is not None:
-        cv2.imwrite(path + "_ROI.jpg", roi)
+        cv2.imwrite(path + "_ROI.jpg", transform)
 
-    return roi
+    return transform
 
 
 def bgr_to_hsv(image, path=None):
@@ -141,7 +176,7 @@ def kmeans_clustering(image, k, path=None):
 
 
 def blur_image(image, path=None):
-    blur = cv2.GaussianBlur(image, (9, 9), 0)
+    blur = cv2.GaussianBlur(image, (11, 11), 0)
     if path is not None:
         cv2.imwrite(path + "_BLUR.jpg", blur)
 
@@ -208,7 +243,8 @@ def draw_objects(image, contours, box, colour, path=None):
 
     index = 0
     for _ in contours:
-        # cv2.drawContours(result, contours[index], -1, (255, 0, 0), 3)
+        if contours[index] is not None:
+            cv2.drawContours(result, contours[index], -1, (255, 0, 0), 3)
 
         x, y, width, height = box[index]
         cv2.rectangle(result, (x, y), (x + width, y + height), colour[index], 3)

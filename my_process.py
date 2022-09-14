@@ -9,6 +9,8 @@ sample_cluster = dict()
 sample_hsv1 = dict()
 sample_hsv2 = dict()
 sample_object = dict()
+sample_location = dict()
+sample_size = dict()
 sample_area = dict()
 
 for data in samples_data["samples"]:
@@ -17,12 +19,16 @@ for data in samples_data["samples"]:
     _hsv1 = data["hsv1"]
     _hsv2 = data["hsv2"]
     _object = data["object"]
+    _location = data["location"]
+    _size = data["size"]
     _area = data["area"]
 
     sample_cluster[_id] = _cluster
     sample_hsv1[_id] = _hsv1
     sample_hsv2[_id] = _hsv2
     sample_object[_id] = _object
+    sample_location[_id] = _location
+    sample_size[_id] = _size
     sample_area[_id] = _area
 
 
@@ -57,6 +63,41 @@ def process_image(image, path, sample):
 
     if count != sample_object[sample]:
         flag = False
+
+        centre = []
+        for b in box:
+            x, y, width, height = b
+            centre.append([x + (width // 2), y + (height // 2)])
+        print(centre)
+
+        presence = []
+        i = 0
+        for c in centre:
+            for lct in sample_location[sample]:
+                if lct[0] - sample_size[sample][0] // 2 < c[0] < lct[0] + sample_size[sample][0] // 2:
+                    if lct[1] - sample_size[sample][1] // 2 < c[1] < lct[1] + sample_size[sample][1] // 2:
+                        presence.append(i)
+                i += 1
+            i = 0
+        print(presence)
+
+        missing = []
+        j = 0
+        for _ in range(sample_object[sample]):
+            if j not in presence:
+                missing.append(j)
+            j += 1
+        print(missing)
+
+        for m in missing:
+            x = sample_location[sample][m][0] - sample_size[sample][0] // 2
+            y = sample_location[sample][m][1] - sample_size[sample][1] // 2
+            width = sample_size[sample][0]
+            height = sample_size[sample][1]
+
+            contours.append(None)
+            box.append((x, y, width, height))
+            box_colour.append((0, 0, 255))
 
     img_result = mf.draw_objects(img_roi, contours, box, box_colour, path=path)
 
